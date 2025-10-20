@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../models/habit.dart';
 import '../state/app_state.dart';
-import '../widgets/gradient_card.dart';
 
 class HabitsScreen extends StatelessWidget {
   const HabitsScreen({super.key});
@@ -140,13 +139,24 @@ class HabitsScreen extends StatelessWidget {
     int total,
     double rate,
   ) {
-    return GradientCard(
-      gradient: LinearGradient(
-        colors: <Color>[
-          Theme.of(context).colorScheme.primary,
-          Theme.of(context).colorScheme.tertiary,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.tertiary,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 12),
+          ),
         ],
       ),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

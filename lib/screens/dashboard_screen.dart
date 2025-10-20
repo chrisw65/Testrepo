@@ -737,6 +737,7 @@ class _RitualCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return Container(
       width: 240,
+      height: 340,
       decoration: BoxDecoration(
         color: ritual.moment.color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(24),

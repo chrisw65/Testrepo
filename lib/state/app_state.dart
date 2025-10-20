@@ -28,6 +28,7 @@ class AppState extends ChangeNotifier {
   final List<Habit> _habits = <Habit>[];
   DateTime? _lastCompletionDate;
   int _streak = 0;
+  int _idCounter = 0;
 
   UnmodifiableListView<Task> get tasks => UnmodifiableListView<Task>(_tasks);
   UnmodifiableListView<FocusSession> get sessions =>
@@ -1026,7 +1027,10 @@ class AppState extends ChangeNotifier {
     _habits.add(journaling);
   }
 
-  String _generateId() => DateTime.now().microsecondsSinceEpoch.toString();
+  String _generateId() {
+    _idCounter++;
+    return '${DateTime.now().microsecondsSinceEpoch}_$_idCounter';
+  }
 }
 
 class StreakInfo {

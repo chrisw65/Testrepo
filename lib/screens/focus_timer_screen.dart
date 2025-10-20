@@ -372,7 +372,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> {
                   .formatMediumDate(session.startedAt);
               final String time = MaterialLocalizations.of(context)
                   .formatTimeOfDay(TimeOfDay.fromDateTime(session.startedAt));
-              final Task? task = state.tasks
+              final Task task = state.tasks
                   .firstWhere((Task task) => task.id == session.taskId, orElse: () => Task(
                         id: session.taskId,
                         title: 'Archived task',

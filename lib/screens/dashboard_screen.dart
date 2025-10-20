@@ -18,24 +18,32 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
-      builder: (BuildContext context, AppState state, Widget? _) {
+      builder: (BuildContext context, AppState state, Widget? child) {
         return CustomScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           slivers: <Widget>[
-            SliverToBoxAdapter(child: _MomentumHero(state: state)),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(child: _HabitSummary(state: state)),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(child: _FocusBlueprint(state: state)),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(child: _RitualStack(state: state)),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(child: _WellbeingPulse(state: state)),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(child: _MomentumAnalytics(state: state)),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(child: _AntidoteShowcase(state: state)),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 64)),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate(
+                  <Widget>[
+                    _MomentumHero(state: state),
+                    const SizedBox(height: 24),
+                    _HabitSummary(state: state),
+                    const SizedBox(height: 24),
+                    _FocusBlueprint(state: state),
+                    const SizedBox(height: 24),
+                    _RitualStack(state: state),
+                    const SizedBox(height: 24),
+                    _WellbeingPulse(state: state),
+                    const SizedBox(height: 24),
+                    _MomentumAnalytics(state: state),
+                    const SizedBox(height: 24),
+                    _AntidoteShowcase(state: state),
+                    const SizedBox(height: 64),
+                  ],
+                ),
+              ),
+            ),
           ],
         );
       },

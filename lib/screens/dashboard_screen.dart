@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/habit.dart';
 import '../models/procrastination_trigger.dart';
 import '../models/reflection_entry.dart';
 import '../models/support_ritual.dart';
@@ -22,6 +23,8 @@ class DashboardScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           slivers: <Widget>[
             SliverToBoxAdapter(child: _MomentumHero(state: state)),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            SliverToBoxAdapter(child: _HabitSummary(state: state)),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
             SliverToBoxAdapter(child: _FocusBlueprint(state: state)),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -301,6 +304,226 @@ class _WellbeingPulse extends StatelessWidget {
                           ))
                       .toList(),
                 ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HabitSummary extends StatelessWidget {
+  const _HabitSummary({required this.state});
+
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<Habit> activeHabits = state.activeHabits;
+    final int completedToday = state.habitsCompletedToday;
+    final double completionRate = state.todayHabitCompletionRate;
+
+    if (activeHabits.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Text(
+              'Today\'s habits',
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                // Navigation will be handled automatically when user clicks the Habits tab
+              },
+              icon: const Icon(Icons.arrow_forward),
+              label: const Text('View all'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            '$completedToday of ${activeHabits.length} completed',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            completionRate == 1.0
+                                ? 'Perfect day! All habits completed! 🎉'
+                                : completionRate >= 0.7
+                                    ? 'Great progress! Keep the momentum!'
+                                    : 'You\'ve got this! Every habit counts.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: <Widget>[
+                          CircularProgressIndicator(
+                            value: completionRate,
+                            strokeWidth: 8,
+                            backgroundColor:
+                                theme.colorScheme.surfaceContainerHighest,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              completionRate >= 0.7
+                                  ? Colors.green
+                                  : theme.colorScheme.primary,
+                            ),
+                          ),
+                          Center(
+                            child: Text(
+                              '${(completionRate * 100).round()}%',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Quick check-in',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                ...activeHabits.take(3).map((Habit habit) {
+                  final bool isCompleted = habit.isCompletedToday;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isCompleted
+                          ? habit.color.withOpacity(0.1)
+                          : theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isCompleted
+                            ? habit.color.withOpacity(0.3)
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        GestureDetector(
+                          onTap: () => state.toggleHabitCompletion(habit.id),
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isCompleted
+                                  ? habit.color
+                                  : Colors.transparent,
+                              border: Border.all(
+                                color: habit.color,
+                                width: 2,
+                              ),
+                            ),
+                            child: isCompleted
+                                ? const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 16,
+                                  )
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          habit.icon,
+                          size: 18,
+                          color: habit.color,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            habit.name,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              decoration: isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              color: isCompleted
+                                  ? theme.colorScheme.onSurface.withOpacity(0.6)
+                                  : null,
+                            ),
+                          ),
+                        ),
+                        if (habit.currentStreak > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                const Icon(
+                                  Icons.local_fire_department,
+                                  size: 12,
+                                  color: Colors.orange,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${habit.currentStreak}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                }),
+                if (activeHabits.length > 3) ...<Widget>[
+                  const SizedBox(height: 12),
+                  Text(
+                    'and ${activeHabits.length - 3} more habit${activeHabits.length - 3 != 1 ? 's' : ''}...',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

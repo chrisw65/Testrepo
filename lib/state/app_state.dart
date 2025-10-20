@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../models/focus_session.dart';
+import '../models/habit.dart';
 import '../models/procrastination_trigger.dart';
 import '../models/reflection_entry.dart';
 import '../models/support_ritual.dart';
@@ -16,6 +17,7 @@ class AppState extends ChangeNotifier {
     _seedTriggers();
     _seedRituals();
     _seedSessions();
+    _seedHabits();
   }
 
   final List<Task> _tasks = <Task>[];
@@ -23,6 +25,7 @@ class AppState extends ChangeNotifier {
   final List<ReflectionEntry> _reflections = <ReflectionEntry>[];
   final List<ProcrastinationTrigger> _triggers = <ProcrastinationTrigger>[];
   final List<SupportRitual> _rituals = <SupportRitual>[];
+  final List<Habit> _habits = <Habit>[];
   DateTime? _lastCompletionDate;
   int _streak = 0;
 
@@ -35,6 +38,8 @@ class AppState extends ChangeNotifier {
       UnmodifiableListView<ProcrastinationTrigger>(_triggers);
   UnmodifiableListView<SupportRitual> get rituals =>
       UnmodifiableListView<SupportRitual>(_rituals);
+  UnmodifiableListView<Habit> get habits =>
+      UnmodifiableListView<Habit>(_habits);
 
   int get streak => _streak;
 
@@ -693,5 +698,341 @@ class AppState extends ChangeNotifier {
     _lastCompletionDate = completionDay;
   }
 
+  // Habit-related getters
+  List<Habit> get activeHabits =>
+      _habits.where((Habit habit) => habit.isActive).toList(growable: false);
+
+  List<Habit> get completedTodayHabits => _habits
+      .where((Habit habit) => habit.isActive && habit.isCompletedToday)
+      .toList(growable: false);
+
+  int get habitsCompletedToday => completedTodayHabits.length;
+
+  double get todayHabitCompletionRate {
+    final int activeCount = activeHabits.length;
+    if (activeCount == 0) {
+      return 0;
+    }
+    return habitsCompletedToday / activeCount;
+  }
+
+  int get totalActiveHabitStreak {
+    return activeHabits.fold<int>(
+      0,
+      (int sum, Habit habit) => sum + habit.currentStreak,
+    );
+  }
+
+  Habit? getHabitById(String id) {
+    try {
+      return _habits.firstWhere((Habit habit) => habit.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Habit management methods
+  void addHabit(Habit habit) {
+    _habits.add(habit);
+    notifyListeners();
+  }
+
+  void createHabit({
+    required String name,
+    required String description,
+    required HabitCategory category,
+    required IconData icon,
+    required Color color,
+    HabitFrequency frequency = HabitFrequency.daily,
+    int targetDaysPerWeek = 7,
+    TimeOfDay? reminderTime,
+    String? notes,
+  }) {
+    final Habit habit = Habit(
+      id: _generateId(),
+      name: name,
+      description: description,
+      frequency: frequency,
+      category: category,
+      icon: icon,
+      color: color,
+      createdAt: DateTime.now(),
+      targetDaysPerWeek: targetDaysPerWeek,
+      reminderTime: reminderTime,
+      notes: notes,
+    );
+    addHabit(habit);
+  }
+
+  void toggleHabitCompletion(String habitId) {
+    final int index = _habits.indexWhere((Habit habit) => habit.id == habitId);
+    if (index == -1) {
+      return;
+    }
+
+    final Habit current = _habits[index];
+    final DateTime today = DateTime.now();
+    final bool isAlreadyCompleted = current.isCompletedToday;
+
+    List<DateTime> updatedHistory = List<DateTime>.from(current.completionHistory);
+
+    if (isAlreadyCompleted) {
+      // Remove today's completion
+      updatedHistory.removeWhere((DateTime date) =>
+          date.year == today.year &&
+          date.month == today.month &&
+          date.day == today.day);
+    } else {
+      // Add today's completion
+      updatedHistory.add(today);
+      updatedHistory.sort();
+    }
+
+    // Calculate new streak
+    final StreakInfo streakInfo = _calculateStreak(updatedHistory);
+
+    final Habit updated = current.copyWith(
+      completionHistory: updatedHistory,
+      currentStreak: streakInfo.current,
+      longestStreak: max(current.longestStreak, streakInfo.current),
+    );
+
+    _habits[index] = updated;
+    notifyListeners();
+  }
+
+  void updateHabit(String habitId, Habit updatedHabit) {
+    final int index = _habits.indexWhere((Habit habit) => habit.id == habitId);
+    if (index == -1) {
+      return;
+    }
+    _habits[index] = updatedHabit;
+    notifyListeners();
+  }
+
+  void deleteHabit(String habitId) {
+    _habits.removeWhere((Habit habit) => habit.id == habitId);
+    notifyListeners();
+  }
+
+  void archiveHabit(String habitId) {
+    final int index = _habits.indexWhere((Habit habit) => habit.id == habitId);
+    if (index == -1) {
+      return;
+    }
+    final Habit current = _habits[index];
+    _habits[index] = current.copyWith(isActive: false);
+    notifyListeners();
+  }
+
+  StreakInfo _calculateStreak(List<DateTime> completionHistory) {
+    if (completionHistory.isEmpty) {
+      return const StreakInfo(current: 0, longest: 0);
+    }
+
+    final List<DateTime> sortedDates = List<DateTime>.from(completionHistory);
+    sortedDates.sort((DateTime a, DateTime b) => b.compareTo(a));
+
+    int currentStreak = 0;
+    int longestStreak = 0;
+    int tempStreak = 1;
+
+    final DateTime today = DateTime.now();
+    final DateTime todayDate = DateTime(today.year, today.month, today.day);
+    final DateTime yesterday = todayDate.subtract(const Duration(days: 1));
+
+    final DateTime lastCompletionDate = DateTime(
+      sortedDates.first.year,
+      sortedDates.first.month,
+      sortedDates.first.day,
+    );
+
+    // Check if streak is still active (completed today or yesterday)
+    if (lastCompletionDate.isAtSameMomentAs(todayDate) ||
+        lastCompletionDate.isAtSameMomentAs(yesterday)) {
+      currentStreak = 1;
+
+      for (int i = 1; i < sortedDates.length; i++) {
+        final DateTime currentDate = DateTime(
+          sortedDates[i].year,
+          sortedDates[i].month,
+          sortedDates[i].day,
+        );
+        final DateTime previousDate = DateTime(
+          sortedDates[i - 1].year,
+          sortedDates[i - 1].month,
+          sortedDates[i - 1].day,
+        );
+
+        final int dayDifference = previousDate.difference(currentDate).inDays;
+
+        if (dayDifference == 1) {
+          currentStreak++;
+        } else if (dayDifference == 0) {
+          // Same day, continue
+          continue;
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Calculate longest streak
+    for (int i = 1; i < sortedDates.length; i++) {
+      final DateTime currentDate = DateTime(
+        sortedDates[i].year,
+        sortedDates[i].month,
+        sortedDates[i].day,
+      );
+      final DateTime previousDate = DateTime(
+        sortedDates[i - 1].year,
+        sortedDates[i - 1].month,
+        sortedDates[i - 1].day,
+      );
+
+      final int dayDifference = previousDate.difference(currentDate).inDays;
+
+      if (dayDifference == 1) {
+        tempStreak++;
+      } else if (dayDifference == 0) {
+        // Same day, continue
+        continue;
+      } else {
+        longestStreak = max(longestStreak, tempStreak);
+        tempStreak = 1;
+      }
+    }
+    longestStreak = max(longestStreak, tempStreak);
+
+    return StreakInfo(current: currentStreak, longest: longestStreak);
+  }
+
+  void _seedHabits() {
+    if (_habits.isNotEmpty) {
+      return;
+    }
+
+    // Create sample habits
+    final DateTime now = DateTime.now();
+    final DateTime fiveDaysAgo = now.subtract(const Duration(days: 5));
+
+    // Morning meditation habit
+    final Habit meditation = Habit(
+      id: _generateId(),
+      name: 'Morning Meditation',
+      description: 'Start the day with 10 minutes of mindfulness',
+      frequency: HabitFrequency.daily,
+      category: HabitCategory.mindfulness,
+      icon: Icons.self_improvement,
+      color: Colors.purple,
+      createdAt: fiveDaysAgo,
+      targetDaysPerWeek: 7,
+      reminderTime: const TimeOfDay(hour: 7, minute: 0),
+      completionHistory: <DateTime>[
+        now.subtract(const Duration(days: 4)),
+        now.subtract(const Duration(days: 3)),
+        now.subtract(const Duration(days: 2)),
+        now.subtract(const Duration(days: 1)),
+      ],
+      currentStreak: 4,
+      longestStreak: 4,
+    );
+    _habits.add(meditation);
+
+    // Exercise habit
+    final Habit exercise = Habit(
+      id: _generateId(),
+      name: 'Exercise',
+      description: '30 minutes of physical activity',
+      frequency: HabitFrequency.daily,
+      category: HabitCategory.fitness,
+      icon: Icons.fitness_center,
+      color: Colors.orange,
+      createdAt: fiveDaysAgo,
+      targetDaysPerWeek: 5,
+      reminderTime: const TimeOfDay(hour: 6, minute: 30),
+      completionHistory: <DateTime>[
+        now.subtract(const Duration(days: 4)),
+        now.subtract(const Duration(days: 2)),
+      ],
+      currentStreak: 0,
+      longestStreak: 2,
+    );
+    _habits.add(exercise);
+
+    // Reading habit
+    final Habit reading = Habit(
+      id: _generateId(),
+      name: 'Read for Learning',
+      description: 'Read for 20 minutes to expand knowledge',
+      frequency: HabitFrequency.daily,
+      category: HabitCategory.learning,
+      icon: Icons.menu_book,
+      color: Colors.blue,
+      createdAt: fiveDaysAgo,
+      targetDaysPerWeek: 7,
+      reminderTime: const TimeOfDay(hour: 20, minute: 0),
+      completionHistory: <DateTime>[
+        now.subtract(const Duration(days: 3)),
+        now.subtract(const Duration(days: 2)),
+        now.subtract(const Duration(days: 1)),
+      ],
+      currentStreak: 3,
+      longestStreak: 3,
+    );
+    _habits.add(reading);
+
+    // Water intake habit
+    final Habit water = Habit(
+      id: _generateId(),
+      name: 'Drink 8 Glasses of Water',
+      description: 'Stay hydrated throughout the day',
+      frequency: HabitFrequency.daily,
+      category: HabitCategory.health,
+      icon: Icons.local_drink,
+      color: Colors.cyan,
+      createdAt: fiveDaysAgo,
+      targetDaysPerWeek: 7,
+      completionHistory: <DateTime>[
+        now.subtract(const Duration(days: 4)),
+        now.subtract(const Duration(days: 3)),
+        now.subtract(const Duration(days: 1)),
+      ],
+      currentStreak: 0,
+      longestStreak: 2,
+    );
+    _habits.add(water);
+
+    // Journaling habit
+    final Habit journaling = Habit(
+      id: _generateId(),
+      name: 'Evening Journaling',
+      description: 'Reflect on the day and set intentions',
+      frequency: HabitFrequency.daily,
+      category: HabitCategory.mindfulness,
+      icon: Icons.book,
+      color: Colors.teal,
+      createdAt: fiveDaysAgo,
+      targetDaysPerWeek: 5,
+      reminderTime: const TimeOfDay(hour: 21, minute: 0),
+      completionHistory: <DateTime>[
+        now.subtract(const Duration(days: 4)),
+        now.subtract(const Duration(days: 2)),
+        now.subtract(const Duration(days: 1)),
+      ],
+      currentStreak: 0,
+      longestStreak: 2,
+    );
+    _habits.add(journaling);
+  }
+
   String _generateId() => DateTime.now().microsecondsSinceEpoch.toString();
 }
+
+class StreakInfo {
+  const StreakInfo({required this.current, required this.longest});
+
+  final int current;
+  final int longest;
+}
+

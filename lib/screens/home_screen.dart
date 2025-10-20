@@ -5,6 +5,7 @@ import '../models/task.dart';
 import '../state/app_state.dart';
 import 'dashboard_screen.dart';
 import 'focus_timer_screen.dart';
+import 'habits_screen.dart';
 import 'insights_screen.dart';
 import 'tasks_screen.dart';
 
@@ -20,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = const <Widget>[
     DashboardScreen(),
+    HabitsScreen(),
     TasksScreen(),
     FocusTimerScreen(),
     InsightsScreen(),
@@ -27,9 +29,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final Map<int, String> _titles = <int, String>{
     0: 'Momentum cockpit',
-    1: 'Focus planner',
-    2: 'Guided deep work',
-    3: 'Insight studio',
+    1: 'Habit tracker',
+    2: 'Focus planner',
+    3: 'Guided deep work',
+    4: 'Insight studio',
   };
 
   @override
@@ -77,6 +80,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         label: Text('Dashboard'),
                       ),
                       NavigationRailDestination(
+                        icon: Icon(Icons.star_outline),
+                        selectedIcon: Icon(Icons.star),
+                        label: Text('Habits'),
+                      ),
+                      NavigationRailDestination(
                         icon: Icon(Icons.task_alt_outlined),
                         selectedIcon: Icon(Icons.task_alt),
                         label: Text('Tasks'),
@@ -117,6 +125,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icon(Icons.dashboard_outlined),
                 selectedIcon: Icon(Icons.dashboard),
                 label: 'Dashboard',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.star_outline),
+                selectedIcon: Icon(Icons.star),
+                label: 'Habits',
               ),
               NavigationDestination(
                 icon: Icon(Icons.checklist_rtl),
@@ -161,10 +174,12 @@ class _HomeScreenState extends State<HomeScreen> {
             _index == 0
                 ? 'Design your day, defuse friction, and celebrate traction.'
                 : _index == 1
-                    ? 'Sequence your next breakthroughs into approachable steps.'
+                    ? 'Build consistency one habit at a time, track your streaks.'
                     : _index == 2
-                        ? 'Prime your rituals, pick a focus mode, and log intentional sessions.'
-                        : 'Review insights, unlock antidotes, and tweak your momentum system.',
+                        ? 'Sequence your next breakthroughs into approachable steps.'
+                        : _index == 3
+                            ? 'Prime your rituals, pick a focus mode, and log intentional sessions.'
+                            : 'Review insights, unlock antidotes, and tweak your momentum system.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

@@ -429,6 +429,7 @@ class _HabitSummary extends StatelessWidget {
                 ...activeHabits.take(3).map((Habit habit) {
                   final bool isCompleted = habit.isCompletedToday;
                   return Container(
+                    key: ValueKey<String>(habit.id),
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

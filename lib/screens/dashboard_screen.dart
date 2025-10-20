@@ -216,7 +216,7 @@ class _RitualStack extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 180,
+          height: 360,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemBuilder: (BuildContext context, int index) {
@@ -742,64 +742,69 @@ class _RitualCard extends StatelessWidget {
         border: Border.all(color: ritual.moment.color.withOpacity(0.4)),
       ),
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(ritual.icon ?? Icons.auto_awesome, color: ritual.moment.color),
-              const SizedBox(width: 8),
-              Text(
-                ritual.moment.label,
-                style: theme.textTheme.labelLarge,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            ritual.title,
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            ritual.description,
-            style: theme.textTheme.bodySmall,
-          ),
-          const Spacer(),
-          ...ritual.steps
-              .map(
-                (String step) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      const Icon(Icons.check_circle_outline, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          step,
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ),
-                    ],
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(ritual.icon ?? Icons.auto_awesome, color: ritual.moment.color),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    ritual.moment.label,
+                    style: theme.textTheme.labelLarge,
                   ),
                 ),
-              )
-              .toList(),
-          if (ritual.affirmation != null)
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                '“${ritual.affirmation!}”',
-                style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
-              ),
+              ],
             ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              ritual.title,
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              ritual.description,
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            ...ritual.steps
+                .map(
+                  (String step) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        const Icon(Icons.check_circle_outline, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            step,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+            if (ritual.affirmation != null)
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '"${ritual.affirmation!}"',
+                  style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
